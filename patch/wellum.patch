@@ -44,7 +44,7 @@ index fe5a60b8..0e613e12 100644
 +In a Rust keymap use the `latchtap!` macro, e.g. `latchtap!(ModifierCombination::LCTRL, Tab)`. `LatchTap` is not yet representable as a Vial keycode, so it can only be configured via `keyboard.toml` or the Rust API.
 +:::
 diff --git a/rmk-config/src/keymap.pest b/rmk-config/src/keymap.pest
-index 80be012d..82c0d53f 100644
+index 89197e55..c8d90677 100644
 --- a/rmk-config/src/keymap.pest
 +++ b/rmk-config/src/keymap.pest
 @@ -119,12 +119,15 @@ trigger_macro_action = { ^"MACRO" ~ "(" ~ number ~ ")" }
@@ -65,10 +65,10 @@ index 80be012d..82c0d53f 100644
  
  // The entire key map string: Start, zero or more key actions, End.
 diff --git a/rmk-config/src/keymap.rs b/rmk-config/src/keymap.rs
-index bc6a6ec9..561045b0 100644
+index d8fc2803..9d04300d 100644
 --- a/rmk-config/src/keymap.rs
 +++ b/rmk-config/src/keymap.rs
-@@ -628,6 +628,33 @@ mod tests {
+@@ -683,6 +683,33 @@ mod tests {
          }
      }
  
@@ -103,10 +103,10 @@ index bc6a6ec9..561045b0 100644
      fn test_nested_actions_in_tap_hold_slots() {
          let aliases = HashMap::new();
 diff --git a/rmk-config/src/lib.rs b/rmk-config/src/lib.rs
-index 80bd0317..c1687760 100644
+index 15bed924..f9390523 100644
 --- a/rmk-config/src/lib.rs
 +++ b/rmk-config/src/lib.rs
-@@ -868,6 +868,7 @@ pub(crate) struct OneShotConfig {
+@@ -870,6 +870,7 @@ pub(crate) struct OneShotConfig {
  pub struct OneShotModifiersConfig {
      pub activate_on_keypress: Option<bool>,
      pub quick_release: Option<bool>,
@@ -246,10 +246,10 @@ index c6bd302b..368db323 100644
  
  /// Config for combo behavior
 diff --git a/rmk/src/keyboard.rs b/rmk/src/keyboard.rs
-index 3959c4c8..4f79eebd 100644
+index 3939a9de..132e5980 100644
 --- a/rmk/src/keyboard.rs
 +++ b/rmk/src/keyboard.rs
-@@ -30,7 +30,7 @@ use crate::keyboard::combo::Combo;
+@@ -28,7 +28,7 @@ use crate::keyboard::combo::Combo;
  use crate::keyboard::fork::ActiveFork;
  use crate::keyboard::held_buffer::{HeldBuffer, HeldKey, KeyState};
  use crate::keyboard::mouse::{MouseAction, MouseState};
@@ -258,7 +258,7 @@ index 3959c4c8..4f79eebd 100644
  use crate::keyboard_macros::MacroOperation;
  use crate::keymap::KeyMap;
  use crate::{COMBO_MAX_NUM, FORK_MAX_NUM, MACRO_SPACE_SIZE, boot};
-@@ -225,6 +225,22 @@ pub struct Keyboard<'a> {
+@@ -199,6 +199,22 @@ pub struct Keyboard<'a> {
      /// Expiry deadline while the oneshot modifiers are armed (`Single`)
      osm_deadline: Option<Instant>,
  
@@ -278,20 +278,20 @@ index 3959c4c8..4f79eebd 100644
 +    /// and releases.
 +    last_published_ui_modifiers: Option<ModifierCombination>,
 +
-     /// Caps Word state machine
-     caps_word: CapsWordState,
- 
-@@ -280,6 +296,9 @@ impl<'a> Keyboard<'a> {
+     /// The pending User-key hold gesture: when it fires, and the id of the held key.
+     /// Any key event cancels it.
+     #[cfg(feature = "_ble")]
+@@ -259,6 +275,9 @@ impl<'a> Keyboard<'a> {
              osl_deadline: None,
              osm_state: OneShotState::default(),
              osm_deadline: None,
 +            latched_modifiers: ModifierCombination::default(),
 +            latched_layer: None,
 +            last_published_ui_modifiers: None,
+             #[cfg(feature = "_ble")]
+             user_hold: None,
              caps_word: CapsWordState::default(),
-             with_modifiers: ModifierCombination::default(),
-             macro_texting: false,
-@@ -397,6 +416,10 @@ impl<'a> Keyboard<'a> {
+@@ -395,6 +414,10 @@ impl<'a> Keyboard<'a> {
          } else {
              self.process_key_action(key_action, event, false, event_time).await
          }
@@ -302,7 +302,7 @@ index 3959c4c8..4f79eebd 100644
      }
  
      async fn process_key_action(
-@@ -1247,15 +1270,12 @@ impl<'a> Keyboard<'a> {
+@@ -1250,15 +1273,12 @@ impl<'a> Keyboard<'a> {
              Action::Key(key) => match key {
                  KeyCode::Hid(hid) => self.process_action_key(hid, event).await,
                  // Consumer/system keys with no HID alias are dispatched directly here.
@@ -319,7 +319,7 @@ index 3959c4c8..4f79eebd 100644
                  }
                  _ => warn!("KeyCode variant not supported: {:?}", key),
              },
-@@ -1350,15 +1370,12 @@ impl<'a> Keyboard<'a> {
+@@ -1353,15 +1373,12 @@ impl<'a> Keyboard<'a> {
              }
              Action::OneShotLayer(l) => {
                  self.process_action_osl(l, event).await;
@@ -336,7 +336,7 @@ index 3959c4c8..4f79eebd 100644
              Action::Light(_light_action) => warn!("Light control is not supported"),
              Action::KeyboardControl(c) => self.process_action_keyboard_control(c, event).await,
              Action::Special(special_key) => self.process_action_special(special_key, event).await,
-@@ -1381,6 +1398,67 @@ impl<'a> Keyboard<'a> {
+@@ -1384,6 +1401,67 @@ impl<'a> Keyboard<'a> {
              }
              _ => warn!("Action variant not supported: {:?}", action),
          }
@@ -404,7 +404,7 @@ index 3959c4c8..4f79eebd 100644
      }
  
      /// Tap action, send a key when the key is pressed, then release the key.
-@@ -1411,7 +1489,7 @@ impl<'a> Keyboard<'a> {
+@@ -1414,7 +1492,7 @@ impl<'a> Keyboard<'a> {
      /// - one-shot modifiers
      pub fn resolve_explicit_modifiers(&self, pressed: bool) -> ModifierCombination {
          // if a one-shot modifier is active, decorate the hid report of keypress with those modifiers
@@ -413,7 +413,7 @@ index 3959c4c8..4f79eebd 100644
  
          // OneShotState::Held keeps the temporary modifiers active until the key is released
          if pressed {
-@@ -1599,40 +1677,71 @@ impl<'a> Keyboard<'a> {
+@@ -1602,40 +1680,71 @@ impl<'a> Keyboard<'a> {
              self.caps_word.check(key);
          }
  
@@ -499,7 +499,7 @@ index 3959c4c8..4f79eebd 100644
      /// Process consumer control action. Consumer control keys are keys in hid consumer page, such as media keys.
      async fn process_action_consumer_control(&mut self, key: ConsumerKey, event: KeyboardEvent) {
          self.media_report.usage_id = if event.pressed { key.into() } else { 0 };
-@@ -1918,10 +2027,40 @@ impl<'a> Keyboard<'a> {
+@@ -1913,10 +2022,40 @@ impl<'a> Keyboard<'a> {
          let report = self.build_keyboard_report(pressed);
          self.send_report(Report::KeyboardReport(report)).await;
  
@@ -540,7 +540,7 @@ index 3959c4c8..4f79eebd 100644
      /// Send system control report if needed
      pub(crate) async fn send_system_control_report(&mut self) {
          self.send_report(Report::SystemControlReport(self.system_control_report))
-@@ -2006,43 +2145,31 @@ impl<'a> Keyboard<'a> {
+@@ -2001,43 +2140,31 @@ impl<'a> Keyboard<'a> {
      /// Register a modifier to be sent in hid report.
      fn register_modifier_key(&mut self, key: HidKeyCode) {
          self.held_modifiers |= key.to_hid_modifiers();
@@ -589,7 +589,7 @@ index 3959c4c8..4f79eebd 100644
  }
  
 diff --git a/rmk/src/keyboard/oneshot.rs b/rmk/src/keyboard/oneshot.rs
-index 66c166d9..ac55a045 100644
+index 41ba9b66..3e1e8572 100644
 --- a/rmk/src/keyboard/oneshot.rs
 +++ b/rmk/src/keyboard/oneshot.rs
 @@ -1,4 +1,5 @@
@@ -659,7 +659,7 @@ index 66c166d9..ac55a045 100644
                      self.osm_deadline = Some(Instant::now() + self.keymap.one_shot_timeout());
                  }
                  OneShotState::Held(cur_modifiers) => {
-@@ -138,22 +178,45 @@ impl<'a> Keyboard<'a> {
+@@ -143,22 +183,45 @@ impl<'a> Keyboard<'a> {
      }
  
      /// Update OSM state based on the keyboard event.
@@ -711,7 +711,7 @@ index 66c166d9..ac55a045 100644
          }
      }
  
-@@ -182,6 +245,10 @@ impl<'a> Keyboard<'a> {
+@@ -187,6 +250,10 @@ impl<'a> Keyboard<'a> {
              // Send release report because modifiers were reported as held on press
              if self.keymap.one_shot_modifiers_config().activate_on_keypress {
                  self.send_keyboard_report_with_resolved_modifiers(false).await;
@@ -723,7 +723,7 @@ index 66c166d9..ac55a045 100644
          }
  
 diff --git a/rmk/src/layout_macro.rs b/rmk/src/layout_macro.rs
-index c8afc0ee..87c3413a 100644
+index fc243ba6..ce09d1ed 100644
 --- a/rmk/src/layout_macro.rs
 +++ b/rmk/src/layout_macro.rs
 @@ -86,6 +86,32 @@ macro_rules! wm {
@@ -760,7 +760,7 @@ index c8afc0ee..87c3413a 100644
  macro_rules! a {
      ($a: ident) => {
 diff --git a/rmk/tests/scenarios/boards/split.toml b/rmk/tests/scenarios/boards/split.toml
-index d9863519..cb399225 100644
+index 1871bc96..ea36a521 100644
 --- a/rmk/tests/scenarios/boards/split.toml
 +++ b/rmk/tests/scenarios/boards/split.toml
 @@ -51,6 +51,6 @@ OSM(LShift | LCtrl)  No   C    D   E   F   No  No   No   No   No  B   No  No
