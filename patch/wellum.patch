@@ -103,10 +103,10 @@ index d8fc28035..9d04300dc 100644
      fn test_nested_actions_in_tap_hold_slots() {
          let aliases = HashMap::new();
 diff --git a/rmk-config/src/lib.rs b/rmk-config/src/lib.rs
-index c74354c68..be6dca0e2 100644
+index 0160025f0..f945a83f9 100644
 --- a/rmk-config/src/lib.rs
 +++ b/rmk-config/src/lib.rs
-@@ -946,6 +946,7 @@ pub(crate) struct OneShotConfig {
+@@ -944,6 +944,7 @@ pub(crate) struct OneShotConfig {
  pub struct OneShotModifiersConfig {
      pub activate_on_keypress: Option<bool>,
      pub quick_release: Option<bool>,
@@ -115,7 +115,7 @@ index c74354c68..be6dca0e2 100644
  
  /// Configurations for combos
 diff --git a/rmk-config/src/resolved/behavior.rs b/rmk-config/src/resolved/behavior.rs
-index 645158d11..2d073681f 100644
+index 9dff8c29d..64dfbd9f2 100644
 --- a/rmk-config/src/resolved/behavior.rs
 +++ b/rmk-config/src/resolved/behavior.rs
 @@ -34,6 +34,7 @@ pub const DEFAULT_AUTO_MOUSE_LAYER_MAX_NUM: usize = 2;
@@ -126,7 +126,7 @@ index 645158d11..2d073681f 100644
  }
  
  pub struct Combos {
-@@ -129,6 +130,7 @@ impl crate::KeyboardTomlConfig {
+@@ -130,6 +131,7 @@ impl crate::KeyboardTomlConfig {
          let one_shot_modifiers = toml_behavior.one_shot_modifiers.map(|o| OneShot {
              activate_on_keypress: o.activate_on_keypress,
              quick_release: o.quick_release,
@@ -185,7 +185,7 @@ index 7c6e0cad2..2b4a1837c 100644
      fn mt_accepts_nested_with_modifier_tap() {
          let out = squash(&expand("MT(WM(P, RAlt), LShift)"));
 diff --git a/rmk-macro/src/codegen/behavior.rs b/rmk-macro/src/codegen/behavior.rs
-index fc6395820..766920659 100644
+index 0bb69cec1..5bcd6eac0 100644
 --- a/rmk-macro/src/codegen/behavior.rs
 +++ b/rmk-macro/src/codegen/behavior.rs
 @@ -55,11 +55,16 @@ fn expand_one_shot_modifiers(one_shot_modifiers: &Option<OneShot>) -> proc_macro
@@ -246,10 +246,10 @@ index 11456707c..66400c923 100644
  
  /// Config for combo behavior
 diff --git a/rmk/src/keyboard.rs b/rmk/src/keyboard.rs
-index 8731bc1ac..fb0bbca46 100644
+index 43c5d0018..5e236b0a4 100644
 --- a/rmk/src/keyboard.rs
 +++ b/rmk/src/keyboard.rs
-@@ -29,7 +29,7 @@ use crate::keyboard::combo::Combo;
+@@ -30,7 +30,7 @@ use crate::keyboard::combo::Combo;
  use crate::keyboard::fork::ActiveFork;
  use crate::keyboard::held_buffer::{HeldBuffer, HeldKey, KeyState};
  use crate::keyboard::mouse::{MouseAction, MouseState};
@@ -258,7 +258,7 @@ index 8731bc1ac..fb0bbca46 100644
  use crate::keymap::KeyMap;
  use crate::{COMBO_MAX_NUM, FORK_MAX_NUM, boot};
  
-@@ -195,6 +195,22 @@ pub struct Keyboard<'a> {
+@@ -196,6 +196,22 @@ pub struct Keyboard<'a> {
      /// Expiry deadline while the oneshot modifiers are armed (`Single`)
      osm_deadline: Option<Instant>,
  
@@ -281,7 +281,7 @@ index 8731bc1ac..fb0bbca46 100644
      /// The pending User-key hold gesture: when it fires, and the id of the held key.
      /// Any key event cancels it.
      #[cfg(feature = "_ble")]
-@@ -244,6 +260,9 @@ impl<'a> Keyboard<'a> {
+@@ -245,6 +261,9 @@ impl<'a> Keyboard<'a> {
              osl_deadline: None,
              osm_state: OneShotState::default(),
              osm_deadline: None,
@@ -291,7 +291,7 @@ index 8731bc1ac..fb0bbca46 100644
              #[cfg(feature = "_ble")]
              user_hold: None,
              caps_word: CapsWordState::default(),
-@@ -392,6 +411,10 @@ impl<'a> Keyboard<'a> {
+@@ -399,6 +418,10 @@ impl<'a> Keyboard<'a> {
          if !self.combo_on || self.process_combo(key_action, event, event_time).await {
              self.process_key_action(key_action, event, event_time).await
          }
@@ -302,7 +302,7 @@ index 8731bc1ac..fb0bbca46 100644
      }
  
      async fn process_key_action(&mut self, key_action: &KeyAction, event: KeyboardEvent, event_time: Instant) {
-@@ -1232,15 +1255,12 @@ impl<'a> Keyboard<'a> {
+@@ -1233,15 +1256,12 @@ impl<'a> Keyboard<'a> {
              Action::Key(key) => match key {
                  KeyCode::Hid(hid) => self.process_action_key(hid, ModifierCombination::new(), event).await,
                  // Consumer/system keys with no HID alias are dispatched directly here.
@@ -319,7 +319,7 @@ index 8731bc1ac..fb0bbca46 100644
                  }
                  _ => warn!("KeyCode variant not supported: {:?}", key),
              },
-@@ -1313,15 +1333,12 @@ impl<'a> Keyboard<'a> {
+@@ -1314,15 +1334,12 @@ impl<'a> Keyboard<'a> {
              }
              Action::OneShotLayer(l) => {
                  self.process_action_osl(l, event).await;
@@ -336,7 +336,7 @@ index 8731bc1ac..fb0bbca46 100644
              Action::Light(_light_action) => warn!("Light control is not supported"),
              Action::KeyboardControl(c) => self.process_action_keyboard_control(c, event).await,
              Action::Special(special_key) => self.process_action_special(special_key, event).await,
-@@ -1344,6 +1361,71 @@ impl<'a> Keyboard<'a> {
+@@ -1345,6 +1362,71 @@ impl<'a> Keyboard<'a> {
              }
              _ => warn!("Action variant not supported: {:?}", action),
          }
@@ -408,7 +408,7 @@ index 8731bc1ac..fb0bbca46 100644
      }
  
      /// Tap action, send a key when the key is pressed, then release the key.
-@@ -1374,7 +1456,7 @@ impl<'a> Keyboard<'a> {
+@@ -1375,7 +1457,7 @@ impl<'a> Keyboard<'a> {
      /// - one-shot modifiers
      pub fn resolve_explicit_modifiers(&self, pressed: bool) -> ModifierCombination {
          // if a one-shot modifier is active, decorate the hid report of keypress with those modifiers
@@ -417,7 +417,7 @@ index 8731bc1ac..fb0bbca46 100644
  
          // OneShotState::Held keeps the temporary modifiers active until the key is released
          if pressed {
-@@ -1577,26 +1659,61 @@ impl<'a> Keyboard<'a> {
+@@ -1578,26 +1660,61 @@ impl<'a> Keyboard<'a> {
              self.unregister_key(HidKeyCode::No, mods, event);
              self.send_keyboard_report_with_resolved_modifiers(false).await;
          }
@@ -487,7 +487,7 @@ index 8731bc1ac..fb0bbca46 100644
      /// Process consumer control action. Consumer control keys are keys in hid consumer page, such as media keys.
      async fn process_action_consumer_control(&mut self, key: ConsumerKey, event: KeyboardEvent) {
          self.media_report.usage_id = if event.pressed { key.into() } else { 0 };
-@@ -1808,10 +1925,40 @@ impl<'a> Keyboard<'a> {
+@@ -1809,10 +1926,40 @@ impl<'a> Keyboard<'a> {
          };
          self.send_report(Report::KeyboardReport(report)).await;
  
@@ -528,7 +528,7 @@ index 8731bc1ac..fb0bbca46 100644
      /// Send system control report if needed
      pub(crate) async fn send_system_control_report(&mut self) {
          self.send_report(Report::SystemControlReport(self.system_control_report))
-@@ -1856,21 +2003,17 @@ impl<'a> Keyboard<'a> {
+@@ -1857,21 +2004,17 @@ impl<'a> Keyboard<'a> {
              if key.keycode == HidKeyCode::No {
                  // A modifier pressed after a fork fired is not suppressed by it.
                  self.fork_keep_mask |= key.mods;
@@ -542,7 +542,7 @@ index 8731bc1ac..fb0bbca46 100644
  
      /// Unregister a released key.
      fn unregister_key(&mut self, key: HidKeyCode, mods: ModifierCombination, event: KeyboardEvent) {
-         let key = RegisteredKey::new(event.pos, key, mods);
+         let key = RegisteredKey::new(event.source, key, mods);
          self.registered.retain(|k| !k.matches(&key));
          if key.keycode == HidKeyCode::No {
 -            publish_event(ModifierEvent {
