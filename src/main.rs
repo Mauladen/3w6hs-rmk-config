@@ -42,7 +42,7 @@ mod keyboard {
     #[Overwritten(entry)]
     async fn run() {
         // Right half on I2C0: SCL = GP1, SDA = GP0, expander at 0x20.
-        let right_i2c = ::embassy_rp::i2c::I2c::new_async(
+        let right_i2c = ::embassy_rp::i2c::I2c::new(
             p.I2C0,
             p.PIN_1,
             p.PIN_0,
