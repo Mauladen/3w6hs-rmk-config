@@ -650,9 +650,11 @@ dependencies = [
 
 [[package]]
 name = "embassy-executor-timer-queue"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fc328bf943af66b80b98755db9106bf7e7471b0cf47dc8559cd9a6be504cc9c"
+version = "0.1.1"
+source = "git+https://github.com/embassy-rs/embassy?rev=12b84e3dd8d6b31f045649b84250292c34e024d4#12b84e3dd8d6b31f045649b84250292c34e024d4"
+dependencies = [
+ "unitrait",
+]
 
 [[package]]
 name = "embassy-executor-timer-queue"
