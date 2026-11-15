@@ -43,7 +43,7 @@ cargo make uf2     # + objcopy ihex → hex-to-uf2 (family rp2040)
 GitHub Actions собирает тот же файл и публикует его в artifact
 `firmware-<commit SHA>` соответствующего workflow run.
 
-## Прошивание
+## Прошивка
 
 Зажать на левой половине кнопку **BOOTSEL** и вставить USB — плата появится
 как накопитель `RPI-RP2`; перетащить на него `firmware/3w6hs.uf2`.
